@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class TaxInfo extends Model
 {
-    protected $table = 'VW_BS_TaxInfo';
+    protected $table = 'dbo.VW_BS_TaxInfo';
 }

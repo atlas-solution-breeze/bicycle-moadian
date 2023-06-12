@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class MoadianResult extends Model
 {
-    protected $table = 'SaleTax';
+    protected $table = 'dbo.SaleTax';
 
     protected $fillable = [
         'Invoice_ID',

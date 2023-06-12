@@ -29,7 +29,7 @@ use Package\Moadian\Moadian;
  */
 class Invoice extends Model
 {
-    protected $table = 'VW_BS_TaxMaster';
+    protected $table = 'dbo.VW_BS_TaxMaster';
 
     public function items(): HasMany
     {

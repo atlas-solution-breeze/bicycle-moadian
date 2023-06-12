@@ -17,5 +17,5 @@ use Illuminate\Database\Eloquent\Model;
  */
 class InvoiceItem extends Model
 {
-    protected $table = 'VW_BS_TaxDetail';
+    protected $table = 'dbo.VW_BS_TaxDetail';
 }
