@@ -49,10 +49,10 @@ class Invoice extends Model
     {
         $taxInfo = TaxInfo::query()->first();
 
-        if (!env('ORG_KEY_ID')) {
+        if (!config('app.moadian.orgKey')) {
             throw new Exception('Org Key ID must be set.');
         }
-        if (!env('PUBLIC_KEY')) {
+        if (!config('app.moadian.publicKey')) {
             throw new Exception('Public Key must be set');
         }
 
@@ -176,8 +176,9 @@ class Invoice extends Model
         if ($moadianInvoice['result']['data'][0]['status'] === 'SUCCESS') {
             MoadianResult::query()->create([
                 'Invoice_ID' => $this->DocID,
-                'Refrence_number' => $referenceNumber,
+                'Reference_number' => $referenceNumber,
                 'Uid' => $uid,
+                'Date' => now()->toDateString(),
             ]);
         }
     }

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property int $Invoice_ID
- * @property string $Refrence_Number
+ * @property string $Reference_Number
  * @property string $Uid
  * @property string $Response
  */
@@ -16,7 +16,7 @@ class MoadianResult extends Model
 
     protected $fillable = [
         'Invoice_ID',
-        'Refrence_Number',
+        'Reference_Number',
         'Uid',
         'Response',
     ];
