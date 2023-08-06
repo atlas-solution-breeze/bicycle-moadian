@@ -33,12 +33,12 @@ class Invoice extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(InvoiceItem::class, 'DocID');
+        return $this->hasMany(InvoiceItem::class, 'DocID', 'DocID');
     }
 
     public function moadianResult(): HasOne
     {
-        return $this->hasOne(MoadianResult::class, 'Invoice_ID');
+        return $this->hasOne(MoadianResult::class, 'Invoice_ID', 'DocID');
     }
 
     /**
@@ -56,7 +56,7 @@ class Invoice extends Model
             throw new Exception('Public Key must be set');
         }
 
-        $username = $taxInfo->username;
+        $username = trim($taxInfo->username);
         $orgKeyId = config('app.moadian.orgKey');
         $privateKey = $taxInfo->private_key;
         $publicKey = config('app.moadian.publicKey');
@@ -68,7 +68,7 @@ class Invoice extends Model
             $username
         );
 
-        $taxId = $moadian->generateTaxId(new DateTime(), $this->DocID);
+        $taxId = $moadian->generateTaxId(new DateTime(), trim($this->DocID));
 
         $invoiceHeaderDto = (new InvoiceHeaderDto)
             ->setTaxid($taxId)
@@ -78,24 +78,24 @@ class Invoice extends Model
             ->setInno(null)
             ->setInp(1)
             ->setIns(1)
-            ->setTins($this->company_economic_code)
-            ->setTob($this->entity_type)
-            ->setBid($this->customer_economic_code)
-            ->setTinb($this->customer_economic_code)
+            ->setTins(trim($this->company_economic_code))
+            ->setTob(trim($this->entity_type))
+            // ->setBid(trim($this->customer_economic_code))
+            ->setTinb(trim($this->customer_economic_code))
             ->setSbc(null)
             ->setBpc(null)
             ->setBbc(null)
             ->setScln(null)
             ->setScc(null)
             ->setCrn(null)
-            ->setTprdis($this->amount_without_vat)
+            ->setTprdis(intval($this->amount_without_vat))
             ->setTdis(0)
-            ->setTadis($this->amount_without_vat)
-            ->setTvam($this->vat_amount)
+            ->setTadis(intval($this->amount_without_vat))
+            ->setTvam(intval($this->vat_amount))
             ->setTodam(0)
-            ->setTbill($this->total_amount)
+            ->setTbill(intval($this->total_amount))
             ->setSetm(1)
-            ->setCap($this->amount_without_vat)
+            ->setCap(intval($this->amount_without_vat))
             ->setInsp(null)
             ->setTvop(null)
             ->setTax17(0);
@@ -107,19 +107,18 @@ class Invoice extends Model
                 throw new Exception('Tax code and tax description are required but not provided.');
             }
             $invoiceBodyDto[] = (new InvoiceBodyDto)
-                ->setSstid($invoiceItem->tax_code)
-                ->setSstt($invoiceItem->tax_description)
-                ->setSstt('')
-                ->setAm($invoiceItem->quantity)
-                ->setMu('')
-                ->setFee($invoiceItem->fee)
+                ->setSstid(trim($invoiceItem->tax_code))
+                ->setSstt(trim($invoiceItem->tax_description))
+                ->setAm(intval($invoiceItem->quantity))
+                ->setMu(intval($invoiceItem->mu))
+                ->setFee(intval($invoiceItem->fee))
                 ->setCfee(null)
                 ->setCut(null)
                 ->setExr(null)
                 ->setPrdis(intval($invoiceItem->rate_without_vat))
                 ->setDis(0)
                 ->setAdis(intval($invoiceItem->rate_without_vat))
-                ->setVra($invoiceItem->vat)
+                ->setVra(intval($invoiceItem->vat))
                 ->setVam(intval($invoiceItem->rate_vat_amount))
                 ->setOdt(null)
                 ->setOdr(null)
@@ -134,7 +133,7 @@ class Invoice extends Model
                 ->setCop(null)
                 ->setVop(null)
                 ->setBsrn(null)
-                ->setTsstam($invoiceItem->rate_total_amount);
+                ->setTsstam(intval($invoiceItem->rate_total_amount));
         }
 
         $invoicePaymentDto = (new InvoicePaymentDto)
@@ -166,14 +165,16 @@ class Invoice extends Model
 
         $response = json_decode($moadianInvoice->getBody()->getContents());
         dump($response);
-        $referenceNumber = $response->result[0]->referenceNumber;
-        $uid = $response->result[0]->uid;
+        $referenceNumber = $response['result']['data'][0]['referenceNumber'];
+        $uid = $response['result']['data'][0]['uid'];
 
         $moadianInvoice = $moadian
             ->setToken($token)
             ->inquiryByReferenceNumber($referenceNumber);
 
-        if ($moadianInvoice['result']['data'][0]['status'] === 'SUCCESS') {
+		$status = $moadianInvoice['result']['data'][0]['status'];
+
+        if ($status === 'SUCCESS') {
             MoadianResult::query()->create([
                 'Invoice_ID' => $this->DocID,
                 'Reference_number' => $referenceNumber,

@@ -80,9 +80,9 @@ return [
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',
-            'url' => env('DATABASE_URL'),
+            'url' => null,
             'host' => env('DB_HOST', 'localhost'),
-            'port' => env('DB_PORT', '1433'),
+            'port' => null,
             'database' => env('DB_DATABASE', 'forge'),
             'username' => env('DB_USERNAME', 'forge'),
             'password' => env('DB_PASSWORD', ''),

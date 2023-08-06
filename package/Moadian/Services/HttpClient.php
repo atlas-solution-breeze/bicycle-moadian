@@ -43,7 +43,7 @@ class HttpClient
             'packet' => $packet->toArray(),
             'signature' => $signature,
         ];
-        dump($content);
+
         $response = $this->post($path, json_encode($content), $headers);
 
         return json_decode($response->getBody()->getContents(), true);

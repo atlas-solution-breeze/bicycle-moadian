@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Invoice;
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
 
@@ -14,6 +15,10 @@ Route::get('/', function () {
                 dump($exception);
             }
         });
+});
+
+Route::get('/products', function () {
+	return (Product::query()->get()->toJson());
 });
 
 Route::get('logs', [LogViewerController::class, 'index']);
