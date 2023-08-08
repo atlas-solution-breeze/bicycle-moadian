@@ -33,12 +33,20 @@ class Invoice extends Model
 
     public function items(): HasMany
     {
-        return $this->hasMany(InvoiceItem::class, 'DocID', 'DocID');
+        return $this->hasMany(
+            InvoiceItem::class,
+            'DocID',
+            'DocID'
+        );
     }
 
     public function moadianResult(): HasOne
     {
-        return $this->hasOne(MoadianResult::class, 'Invoice_ID', 'DocID');
+        return $this->hasOne(
+            MoadianResult::class,
+            'Invoice_ID',
+            'DocID'
+        );
     }
 
     /**
@@ -47,6 +55,8 @@ class Invoice extends Model
      */
     public function send(): void
     {
+        if ($this->moadianResult?->status == 'SUCCESS') return;
+
         $taxInfo = TaxInfo::query()->first();
 
         if (!config('app.moadian.orgKey')) {
@@ -164,23 +174,59 @@ class Invoice extends Model
             ->sendInvoice($packet);
 
         $response = json_decode($moadianInvoice->getBody()->getContents());
-        dump($response);
         $referenceNumber = $response['result']['data'][0]['referenceNumber'];
         $uid = $response['result']['data'][0]['uid'];
+
+        MoadianResult::query()->create([
+            'Invoice_ID' => $this->DocID,
+            'reference_number' => $referenceNumber,
+            'uid' => $uid,
+            'status' => 'PENDING',
+            'response' => $response,
+            'date' => now()->toDateString(),
+        ]);
+
+        $this->check();
+    }
+
+    /**
+     * @throws GuzzleException
+     * @throws Exception
+     */
+    public function check(): void
+    {
+        if ($this->moadianResult->status == 'SUCCESS') return;
+
+        $taxInfo = TaxInfo::query()->first();
+
+        if (!config('app.moadian.orgKey')) {
+            throw new Exception('Org Key ID must be set.');
+        }
+        if (!config('app.moadian.publicKey')) {
+            throw new Exception('Public Key must be set');
+        }
+
+        $username = trim($taxInfo->username);
+        $orgKeyId = config('app.moadian.orgKey');
+        $privateKey = $taxInfo->private_key;
+        $publicKey = config('app.moadian.publicKey');
+
+        $moadian = new Moadian(
+            $publicKey,
+            $privateKey,
+            $orgKeyId,
+            $username
+        );
+
+        $token = $moadian->getToken();
+        $referenceNumber = $this->moadianResult->referenceNumber;
 
         $moadianInvoice = $moadian
             ->setToken($token)
             ->inquiryByReferenceNumber($referenceNumber);
 
-		$status = $moadianInvoice['result']['data'][0]['status'];
-
-        if ($status === 'SUCCESS') {
-            MoadianResult::query()->create([
-                'Invoice_ID' => $this->DocID,
-                'Reference_number' => $referenceNumber,
-                'Uid' => $uid,
-                'Date' => now()->toDateString(),
-            ]);
-        }
+        $status = $moadianInvoice['result']['data'][0]['status'];
+        dump($status);
+//        $this->moadianResult->update(['status' => $status]);
     }
 }

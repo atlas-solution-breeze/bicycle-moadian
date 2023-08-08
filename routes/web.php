@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Invoice;
+use App\Models\MoadianResult;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 use Rap2hpoutre\LaravelLogViewer\LogViewerController;
@@ -14,6 +15,15 @@ Route::get('/', function () {
                 dump($invoice);
                 dump($exception);
             }
+        });
+});
+
+Route::get('/check', function () {
+    Invoice::query()
+        ->whereHas('moadianResult', function ($query) {
+            return $query->whereNot('status', 'SUCCESS');
+        })->each(function ($invoice) {
+            $invoice->check();
         });
 });
 
