@@ -31,6 +31,8 @@ class Invoice extends Model
 {
     protected $table = 'dbo.VW_BS_TaxMaster';
 
+    protected $primaryKey = 'DocID';
+
     public function items(): HasMany
     {
         return $this->hasMany(
