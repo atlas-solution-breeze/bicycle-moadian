@@ -18,6 +18,8 @@ class MoadianResult extends Model
 {
     protected $table = 'dbo.SaleTax';
 
+    public $timestamps = false;
+
     protected $fillable = [
         'Invoice_ID',
         'reference_number',

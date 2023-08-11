@@ -33,6 +33,10 @@ class Invoice extends Model
 
     protected $primaryKey = 'DocID';
 
+	protected $casts = [
+		'Date' => 'datetime',
+	];
+
     public function items(): HasMany
     {
         return $this->hasMany(
@@ -85,7 +89,7 @@ class Invoice extends Model
         $invoiceHeaderDto = (new InvoiceHeaderDto)
             ->setTaxid($taxId)
             ->setIndatim((new DateTime())->getTimestamp() * 1000)
-            ->setIndati2m((new DateTime())->getTimestamp() * 1000)
+            ->setIndati2m($this->Date->getTimestamp() * 1000)
             ->setInty(1)
             ->setInno(null)
             ->setInp(1)
@@ -176,18 +180,31 @@ class Invoice extends Model
             ->sendInvoice($packet);
 
         $response = json_decode($moadianInvoice->getBody()->getContents());
-        $referenceNumber = $response['result']['data'][0]['referenceNumber'];
-        $uid = $response['result']['data'][0]['uid'];
+		
+        $referenceNumber = $response->result[0]->referenceNumber;
+        $uid = $response->result[0]->uid;
+		dump($response);
 
-        MoadianResult::query()->create([
-            'Invoice_ID' => $this->DocID,
-            'reference_number' => $referenceNumber,
-            'uid' => $uid,
-            'status' => 'PENDING',
-            'response' => $response,
-            'date' => now()->toDateString(),
-        ]);
+		if ($this->moadianResult) {
+			$this->moadianResult->update([
+				'reference_number' => $referenceNumber,
+				'uid' => $uid,
+				'status' => 'PENDING',
+				'response' => json_encode($response),
+				'date' => now()->toDateString(),
+			]);
+		} else {
+			MoadianResult::query()->create([
+				'Invoice_ID' => $this->DocID,
+				'reference_number' => $referenceNumber,
+				'uid' => $uid,
+				'status' => 'PENDING',
+				'response' => json_encode($response),
+				'date' => now()->toDateString(),
+			]);
+		}
 
+		$this->refresh();
         $this->check();
     }
 
@@ -197,7 +214,7 @@ class Invoice extends Model
      */
     public function check(): void
     {
-        if ($this->moadianResult->status == 'SUCCESS') return;
+        if ($this->moadianResult?->status == 'SUCCESS') return;
 
         $taxInfo = TaxInfo::query()->first();
 
@@ -221,14 +238,14 @@ class Invoice extends Model
         );
 
         $token = $moadian->getToken();
-        $referenceNumber = $this->moadianResult->referenceNumber;
+        $referenceNumber = $this->moadianResult->reference_number;
 
         $moadianInvoice = $moadian
             ->setToken($token)
             ->inquiryByReferenceNumber($referenceNumber);
 
         $status = $moadianInvoice['result']['data'][0]['status'];
-        dump($status);
-//        $this->moadianResult->update(['status' => $status]);
+		dump($moadianInvoice);
+        $this->moadianResult->update(['status' => $status]);
     }
 }
