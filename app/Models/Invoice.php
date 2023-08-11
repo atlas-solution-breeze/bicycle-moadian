@@ -24,6 +24,7 @@ use Package\Moadian\Moadian;
  * @property-read int $amount_without_vat
  * @property-read int $vat_amount
  * @property-read int $total_amount
+ * @property-read DateTime $Date
  * @property-read InvoiceItem $items
  * @property-read MoadianResult $moadianResult
  */
@@ -33,9 +34,9 @@ class Invoice extends Model
 
     protected $primaryKey = 'DocID';
 
-	protected $casts = [
-		'Date' => 'datetime',
-	];
+    protected $casts = [
+        'Date' => 'datetime',
+    ];
 
     public function items(): HasMany
     {
@@ -180,31 +181,31 @@ class Invoice extends Model
             ->sendInvoice($packet);
 
         $response = json_decode($moadianInvoice->getBody()->getContents());
-		
+
         $referenceNumber = $response->result[0]->referenceNumber;
         $uid = $response->result[0]->uid;
-		dump($response);
+        dump($response);
 
-		if ($this->moadianResult) {
-			$this->moadianResult->update([
-				'reference_number' => $referenceNumber,
-				'uid' => $uid,
-				'status' => 'PENDING',
-				'response' => json_encode($response),
-				'date' => now()->toDateString(),
-			]);
-		} else {
-			MoadianResult::query()->create([
-				'Invoice_ID' => $this->DocID,
-				'reference_number' => $referenceNumber,
-				'uid' => $uid,
-				'status' => 'PENDING',
-				'response' => json_encode($response),
-				'date' => now()->toDateString(),
-			]);
-		}
+        if ($this->moadianResult) {
+            $this->moadianResult->update([
+                'reference_number' => $referenceNumber,
+                'uid' => $uid,
+                'status' => 'PENDING',
+                'response' => json_encode($response),
+                'date' => now()->toDateString(),
+            ]);
+        } else {
+            MoadianResult::query()->create([
+                'Invoice_ID' => $this->DocID,
+                'reference_number' => $referenceNumber,
+                'uid' => $uid,
+                'status' => 'PENDING',
+                'response' => json_encode($response),
+                'date' => now()->toDateString(),
+            ]);
+        }
 
-		$this->refresh();
+        $this->refresh();
         $this->check();
     }
 
@@ -245,7 +246,7 @@ class Invoice extends Model
             ->inquiryByReferenceNumber($referenceNumber);
 
         $status = $moadianInvoice['result']['data'][0]['status'];
-		dump($moadianInvoice);
+        dump($moadianInvoice);
         $this->moadianResult->update(['status' => $status]);
     }
 }
